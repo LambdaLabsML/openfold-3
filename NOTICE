@@ -1,0 +1,16 @@
+OpenFold3 Training Quick Start (OpenFold x Lambda)
+Copyright 2026 Lambda, Inc. and contributors
+
+This product includes software developed by the OpenFold3 Team, the AlQuraishi
+Laboratory at Columbia University, the OpenFold consortium, and their
+contributors. The upstream source is available at:
+
+    https://github.com/aqlaboratory/openfold-3
+
+This repository is a derivative work based on that source. Files have been
+changed relative to upstream; the upstream base commit and a summary of the
+changes are recorded in UPSTREAM.md. The original upstream README is preserved
+as README_UPSTREAM.md.
+
+This NOTICE is informational and does not modify the terms of the Apache
+License, Version 2.0, under which this software is distributed. See LICENSE.

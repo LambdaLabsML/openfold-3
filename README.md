@@ -1,125 +1,184 @@
-# OpenFold3-preview
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/predictions_combined_dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="assets/predictions_combined_light.png">
-  <img alt="Comparison of OpenFold and experimental structures" src="assets/predictions_combined_light.png">
-</picture>
+# OpenFold3 Training Quick Start
 
-OpenFold3-preview is a biomolecular structure prediction model aiming to be a bitwise reproduction of DeepMind's 
-[AlphaFold3](https://github.com/google-deepmind/alphafold3), developed by the AlQuraishi Lab at Columbia University and the OpenFold consortium. This research preview is intended to gather community feedback and allow developers to start building on top of the OpenFold ecosystem. The OpenFold project is committed to long-term maintenance and open source support, and our repository is freely available for academic and commercial use under the Apache 2.0 license.
+> A joint guide from the **OpenFold consortium** and **Lambda** for setting up and training
+> [OpenFold3](https://github.com/aqlaboratory/openfold-3) across different compute
+> configurations — from single-GPU debugging to distributed multi-node training.
 
-For our reproduction of AlphaFold2, please refer to the original [OpenFold repository](https://github.com/aqlaboratory/openfold).
+- [Setup](#setup)
+- [Prepare Training Data](#prepare-training-data)
+- [Training](#training)
+- [Fine-tuning](#fine-tuning)
+- [Checkpointing and Resuming](#checkpointing-and-resuming)
+- [Inference](#inference)
 
-## OpenBind-0
-The default parameters shipped with OpenFold3 `>=0.5.0` are [OpenBind-0](https://openbind.uk/news/blog-openbind-0-advancing-open-molecular-structure-prediction/), which is trained using the forthcoming OpenFold3 architecture with a June 2025 training cutoff. See the [announcement blog post](https://openbind.uk/news/blog-openbind-0-advancing-open-molecular-structure-prediction/) for benchmarks and details. We reccomend using the OpenBind-0 model over OpenFold3-preview2 for everyday usage. 
+---
 
-If you want to keep using the OpenFold3-preview2 weights, install an older release of OpenFold3 - see [how do I use an older set of parameters](https://openfold-3.readthedocs.io/en/latest/parameters_reference.html#how-do-i-use-an-older-set-of-parameters) in our documentation.
+## Setup
 
-## Technical report
-A technical description of the OpenFold3-preview2 model version is available [here](https://portal.openfold.omsf.io/reports/of3p2_technical_report.pdf). Note that the OpenFold3-preview2 weights require an [older release](https://openfold-3.readthedocs.io/en/latest/parameters_reference.html#how-do-i-use-an-older-set-of-parameters) of OpenFold3.
+### Install Pixi
 
-## Documentation
-Please visit our [portal](https://portal.openfold.omsf.io) and [full documentation](https://openfold-3.readthedocs.io/en/latest/) for instructions on running model training and inference.
-
-## Datasets
-We provide the full training data for reproducing OpenFold3-preview, including our reproduction of the MGnify-based 13M-sequence distillation dataset described in the AlphaFold3 paper. For more details about dataset access, please refer to [our portal](https://portal.openfold.omsf.io/datasets).
-
-## Features
-
-OpenFold3-preview replicates the input features described in the [AlphaFold3](https://www.nature.com/articles/s41586-024-07487-w) publication, as well as batch job support and efficient kernel-accelerated inference.
-
-A summary of our supported features includes:
-- Structure prediction of standard and non-canonical protein, RNA, and DNA chains, and small molecules
-- Pipelines for generating MSAs using the [ColabFold server](https://github.com/sokrypton/ColabFold) or using JackHMMER / hhblits following the AlphaFold3 protocol
-- [Structure templates](https://openfold-3.readthedocs.io/en/latest/template_how_to.html) for protein monomers
-- Kernel acceleration through [cuEquivariance](https://docs.nvidia.com/cuda/cuequivariance) and [DeepSpeed4Science](https://www.deepspeed.ai/tutorials/ds4sci_evoformerattention/) kernels - more details [here](https://openfold-3.readthedocs.io/en/latest/kernels.html)
-- Support for [multi-query jobs](https://openfold-3.readthedocs.io/en/latest/input_format.html) with [distributed predictions across multiple GPUs](https://openfold-3.readthedocs.io/en/latest/inference.html#inference-run-on-multiple-gpus)
-- Custom settings for [memory constrained GPU resources](https://openfold-3.readthedocs.io/en/latest/inference.html#inference-low-memory-mode)
-- [Training data processing](https://openfold-3.readthedocs.io/en/latest/data_pipeline_reference.html) and [model training](https://openfold-3.readthedocs.io/en/latest/training.html)
-
-## Quick-Start for Inference
-
-Make your first predictions with OpenFold3-preview in a few easy steps:
-
-
-1. Install OpenFold3-preview using our pip package
-```bash
-pip install openfold3 
-```
-
-2. Setup your installation of OpenFold3-preview and download model parameters:
-```bash
-setup_openfold
-```
-
-3. Run your first prediction using the ColabFold MSA server with the `run_openfold` binary. It may also be necessary to [configure your environment variables](https://openfold-3.readthedocs.io/en/latest/Installation.html#environment-variables) depending on your system.  
+OpenFold3 provides pre-configured Pixi environments for different hardware and CUDA
+versions. First, install Pixi:
 
 ```bash
-run_openfold predict --query_json=examples/example_inference_inputs/query_ubiquitin.json
+curl -fsSL https://pixi.sh/install.sh | sh
 ```
 
-More information on how to customize your inference prediction can be found at our documentation home at https://openfold-3.readthedocs.io/en/latest/. More examples for inputs and outputs can be found in our [HuggingFace examples](https://huggingface.co/OpenFold/OpenFold3/tree/main/examples/common_examples).
+Restart your shell after installation so that the `pixi` command is available.
 
-## Benchmarking
+### Clone the repository
 
-**OpenFold3-preview-2 results:**
-<picture>
-  <source srcset="assets/of3p2-benchmarks-rnp.png">
-  <img alt="Runs N' Poses performance of OpenFold3-preview-2 and other models" src="assets/of3p2-benchmarks-rnp.png">
-</picture>
-<picture>
-  <source srcset="assets/of3p2-benchmarks-fb-interface.png">
-  <img alt="FoldBench interface performance of OpenFold3-preview-2 and other models">
-</picture>
-<picture>
-  <source srcset="assets/of3p2-benchmarks-abag.png">
-  <img alt="AF3 antibody-antigen performance of OpenFold3-preview and other models">
-</picture>
-
-Performance of OF3p2 and other models on a diverse set of benchmarks: 
-- [Runs and Poses](https://www.biorxiv.org/content/10.1101/2025.02.03.636309v3) 
-- [FoldBench](https://www.biorxiv.org/content/10.1101/2025.05.22.655600v1)
-- [AF3 antibody-antigen set](https://www.nature.com/articles/s41586-024-07487-w)
-
-For more details on inferences procedures and benchmarking methods, please refer to the [OpenFold3 Preview 2 whitepaper](https://portal.openfold.omsf.io/reports/of3p2_technical_report.pdf)
-
-**OpenFold3-preview results:**
-
-OpenFold3-preview performs competitively with the state of the art in open source biomolecular structure prediction, while being the only model to match AlphaFold3's performance on monomeric RNA structures.
-
-Performance of OF3p and other models on a diverse set of benchmarks:
-- Protein and RNA monomers from [CASP16](https://www.biorxiv.org/content/10.1101/2025.05.06.652459v2) and [Ludaic et al](https://www.biorxiv.org/content/10.1101/2025.04.30.651414v2)
-- Protein-protein complexes from [CASP16](https://www.biorxiv.org/content/10.1101/2025.05.29.656875v1) and [FoldBench](https://www.biorxiv.org/content/10.1101/2025.05.22.655600v1) 
-- Protein-ligand complexes from the [Runs and Poses](https://www.biorxiv.org/content/10.1101/2025.02.03.636309v3) 
-
-For more details on inferences procedures and benchmarking methods, please refer to the [OpenFold3 Preview whitepaper](assets/of3p1_technical_report.pdf).
-
-## Upcoming
-The final OpenFold3 model is still in development, and we are actively working on the following features:
-- Full parity on all modalities with AlphaFold3
-- Workflows for training on custom non-PDB data
-
-## Community
-
-If you encounter problems using OpenFold3-preview, feel free to create an issue! We also
-welcome pull requests from the community.
-
-In addition, we offer a [public Slack channel](https://join.slack.com/t/openfoldworkspace/shared_invite/zt-40rax5ape-96NkpN_EYgp5~vELu_IdQg) for discussions and questions around OpenFold3.
-
-## Citing this Work
-
-If you use OpenFold3-preview in your research, please cite the following:
-
-```
-@software{openfold3-preview,
-  title = {OpenFold3-preview},
-  author = {{The OpenFold3 Team}},
-  year = {2025},
-  version = {0.4.2},
-  doi = {10.5281/zenodo.19001000},
-  url = {https://github.com/aqlaboratory/openfold-3},
-  abstract = {OpenFold3-preview is a biomolecular structure prediction model aiming to be a bitwise reproduction of DeepMind's AlphaFold3, developed by the AlQuraishi Lab at Columbia University and the OpenFold consortium.}
-}
+```bash
+git clone git@github.com:LambdaLabsML/openfold-3.git
+cd openfold-3
 ```
 
-Any work that cites OpenFold3-preview should also cite [AlphaFold3](https://www.nature.com/articles/s41586-024-07487-w).
+### Set up the OpenFold3 environment
+
+For CUDA 12:
+
+```bash
+pixi run -e openfold3-cuda12 setup_openfold
+```
+
+Follow the interactive prompts to configure the OpenFold cache directory, parameter
+download directory, model parameters, and optional integration tests.
+
+For CUDA 13, replace `openfold3-cuda12` with `openfold3-cuda13`.
+
+> **Use the same Pixi environment consistently** throughout data preparation and training.
+
+---
+
+## Prepare Training Data
+
+For a quick training experiment, generate a subset of the PDB training data:
+
+```bash
+pixi run -e openfold3-cuda12 generate-pdb-subset -- --train-size 1000 --seed 42
+```
+
+Download the corresponding data:
+
+```bash
+pixi run -e openfold3-cuda12 download-pdb-subset -- --train-size 1000 --workers 24
+```
+
+> `generate-pdb-subset` and `download-pdb-subset` are Pixi *tasks*, so arguments are
+> passed after `--`. Both write to `./datasets` relative to the project root.
+
+This produces a dataset configuration YAML at `datasets/train_pdb_subset.yaml`, ready to
+use for training. The default `max_epochs` is `2`.
+
+---
+
+## Training
+
+### Scheme 1: Single-GPU training (H100)
+
+```bash
+pixi run -e openfold3-cuda12 run_openfold train \
+  --runner-yaml datasets/train_pdb_subset.yaml
+```
+
+### Scheme 2: Multi-GPU training
+
+To train on multiple GPUs within a single node, configure your YAML:
+
+```yaml
+pl_trainer_args:
+  devices: 8      # GPUs per node
+  num_nodes: 1
+```
+
+For multi-node distributed training:
+
+```yaml
+pl_trainer_args:
+  devices: 8      # GPUs per node
+  num_nodes: 32   # Total number of nodes
+```
+
+Then launch training with:
+
+```bash
+pixi run -e openfold3-cuda12 run_openfold train \
+  --runner-yaml datasets/train_pdb_subset.yaml
+```
+
+---
+
+## Fine-tuning
+
+To fine-tune from a pre-trained checkpoint, specify the checkpoint path in the config YAML:
+
+```yaml
+experiment_settings:
+  mode: train
+  output_dir: ./finetune_output
+  seed: 42
+  restart_checkpoint_path: /path/to/pretrained.ckpt
+```
+
+---
+
+## Checkpointing and Resuming
+
+Checkpoints are saved to `{output_dir}/checkpoints/`. Checkpointing is configured in the
+config YAML:
+
+```yaml
+checkpoint_config:
+  every_n_epochs: 1               # Save checkpoint every N epochs
+  auto_insert_metric_name: false  # Don't add metric to filename
+  save_last: true                 # Always save 'last.ckpt'
+  save_top_k: -1                  # Keep all checkpoints (-1) or top K
+```
+
+To resume from the last checkpoint:
+
+```yaml
+experiment_settings:
+  restart_checkpoint_path: last
+```
+
+---
+
+## Inference
+
+### Scheme 1: Inference with the default checkpoint
+
+Several modes are available for inference. Using the **ColabFold MSA Server** generally
+provides the best prediction accuracy. In this mode, MSAs are generated automatically
+through the ColabFold server, with only protein sequences sent to the server. This mode is
+recommended when predicting a small number of structures.
+
+```bash
+pixi run -e openfold3-cuda12 run_openfold predict \
+  --query-json examples/example_inference_inputs/query_protein_ligand.json
+```
+
+| Argument | Required | Description |
+| --- | --- | --- |
+| `--query-json` | **Yes** | Path to the input query JSON file. |
+| `--inference-ckpt-path` | No | Path to a model checkpoint file (`.pt`). If omitted, the default checkpoint is used and downloaded automatically on the first inference run. |
+| `--output-dir` | No | Directory where inference outputs are written. Defaults to `test_train_output/`. |
+
+> Every flag also accepts an underscore spelling — `--query_json` works the same as
+> `--query-json`. Additional example inputs are in
+> [`examples/example_inference_inputs/`](examples/example_inference_inputs/).
+
+---
+
+## About this repository
+
+This repository carries the full upstream history of
+[aqlaboratory/openfold-3](https://github.com/aqlaboratory/openfold-3) and is maintained by
+Lambda. The upstream source tree is unmodified — only documentation has been added. See
+[UPSTREAM.md](UPSTREAM.md) for the base commit and full list of changes.
+
+Upstream's original README is preserved as [README_UPSTREAM.md](README_UPSTREAM.md), and
+full OpenFold3 documentation lives at
+[openfold-3.readthedocs.io](https://openfold-3.readthedocs.io/en/latest/).
+
+Licensed under Apache-2.0, same as upstream. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
